@@ -1,0 +1,29 @@
+---
+- name: Install kube CLIs
+  hosts: k8s_hosts
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  vars:
+    rebuild: false
+
+  tasks:
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Set up Kubernetes repository
+      apt_repository: repo='deb http://apt.kubernetes.io/ kubernetes-xenial main' state=present
+
+    - name: Install kube CLIs
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
+      with_items:
+        - kubelet
+        - kubeadm
+        - kubectl
+      when: not rebuild | bool

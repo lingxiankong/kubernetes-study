@@ -1,0 +1,155 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Deploy and prepare instances in OpenStack
+  hosts: localhost
+
+  vars:
+    image: 9136e86b-14d9-4127-b3dd-f1cdb18b0dc6
+    network: network1
+    key_name: lingxian_pc
+    flavor: 5ff0b09b-684c-4212-8edc-826f26f9ab78
+    security_groups:
+      - default
+    node_prefix: lingxian
+    node_names:
+      - master
+      - node1
+      - node2
+
+  tasks:
+    - name: Create ports
+      os_port:
+        state: present
+        name: "{{ node_prefix }}-k8s-{{ item }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_groups }}"
+        allowed_address_pairs:
+          - ip_address: 192.168.0.0/16
+      with_items: "{{ node_names }}"
+
+    - name: Create VMs
+      os_server:
+        state: present
+        name: "{{ node_prefix }}-k8s-{{ item }}"
+        boot_from_volume: true
+        image: "{{ image }}"
+        volume_size: 15
+        key_name: "{{ key_name }}"
+        nics: port-name={{ node_prefix }}-k8s-{{ item }}
+        flavor: "{{ flavor }}"
+        terminate_volume: true
+        auto_ip: false
+      with_items: "{{ node_names }}"
+
+    - name: Gather facts about vms
+      os_server_facts:
+        server: "{{ node_prefix }}-k8s-*"
+
+    - name: Wait for ssh ready
+      wait_for: port=22 host="{{ item.private_v4 }}" search_regex=OpenSSH timeout=300 delay=5
+      with_items: "{{ openstack_servers }}"
+
+    - name: Add VMs to inventory
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_hosts
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 }}"
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup master group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_master
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(master)')
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup nodes group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_nodes
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(node)')
+      with_items: "{{ openstack_servers }}"
+
+- name: Prepare k8s hosts
+  hosts: k8s_hosts
+  become: true
+  become_method: sudo
+  gather_facts: true
+
+  tasks:
+    - name: Install packages
+      apt: name={{ item }} state=latest update_cache=yes
+      with_items:
+        - python-minimal
+        - ansible
+        - iperf3
+        - unzip
+
+    - name: Build hosts file
+      lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present
+
+- import_playbook: install_docker.yml rebuild={{ rebuild }}
+
+- import_playbook: reset_k8s.yml rebuild={{ rebuild }}
+
+- import_playbook: install_k8s_cli.yml rebuild={{ rebuild }}
+
+- import_playbook: install_kube_prompt.yml
+
+- name: Set up k8s master
+  hosts: k8s_master
+  become: true
+  become_method: sudo
+  gather_facts: true
+
+  tasks:
+    - name: Init master
+      shell: kubeadm init --pod-network-cidr=192.168.0.0/16
+      register: kubeadm_init
+
+    - fail:
+        msg: "kubeadm init command failed."
+      when: kubeadm_init.stdout.find ("kubeadm join") == -1
+
+    - name: Store kubeadm join string
+      set_fact:
+        join_str: "{{ kubeadm_init.stdout | regex_search('kubeadm join(.*)$') }}"
+
+    - name: Prepare kube config
+      shell: mkdir -p {{ item }}/.kube && cp -a /etc/kubernetes/admin.conf {{ item }}/.kube/config
+      with_items:
+        - "{{ ansible_env.HOME }}"
+        - /home/ubuntu
+
+    - name: Allow pod on master
+      shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+    - name: Download calico yaml
+      get_url:
+        url: https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+        dest: "{{ ansible_env.HOME }}/calico.yaml"
+
+    - name: Change calico config
+      replace:
+        path: "{{ ansible_env.HOME }}/calico.yaml"
+        regexp: 'value: "always"'
+        replace: 'value: "off"\n            - name: CALICO_IPV4POOL_NAT_OUTGOING\n              value: "true"'
+        backup: yes
+
+    - name: Install network plugin
+      shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
+
+- name: Set up k8s node
+  hosts: k8s_nodes
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  tasks:
+    - name: Join to cluster
+      shell: "{{ hostvars[groups['k8s_master'][0]]['join_str'] }}"

@@ -1,0 +1,34 @@
+---
+- name: Install docker
+  hosts: k8s_hosts
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  vars:
+    docker_version: 17.03.2~ce-0~ubuntu-xenial
+    rebuild: false
+
+  tasks:
+    - name: Install packages
+      apt: name={{ item }} state=latest update_cache=yes
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+      when: not rebuild | bool
+
+    - name: Add Docker’s official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Set up the stable repository
+      apt_repository: repo='deb https://download.docker.com/linux/ubuntu xenial stable' state=present
+
+    - name: Install docker-ce
+      apt:
+        name: docker-ce={{ docker_version }}
+        state: present
+        update_cache: yes
+      when: not rebuild | bool
