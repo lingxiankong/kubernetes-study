@@ -1,0 +1,128 @@
+#!/usr/bin/env ansible-playbook
+# Usage:
+# source openrc
+# ansible-playbook site.yml -e "rebuild=false"
+# Don't forget to delete the ports when clearing up.
+---
+- name: Deploy and prepare instances in OpenStack
+  hosts: localhost
+
+  vars:
+    image: 9136e86b-14d9-4127-b3dd-f1cdb18b0dc6
+    network: network1
+    key_name: lingxian_pc
+    flavor: 2ba44887-5fe3-44cc-8bca-e2b60a206a66
+    security_groups:
+      - default
+    node_prefix: lingxiantest
+    # Mater hostname must contain 'master', node hostname contains 'node'
+    node_names:
+      - master
+      - node1
+
+  tasks:
+    # Create ports separately in order to setup allowed_address_pairs
+    - name: Create ports
+      os_port:
+        state: present
+        name: "{{ node_prefix }}-k8s-{{ item }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_groups }}"
+        allowed_address_pairs:
+          - ip_address: 192.168.0.0/16
+      with_items: "{{ node_names }}"
+
+    - name: Create VMs
+      os_server:
+        state: present
+        name: "{{ node_prefix }}-k8s-{{ item }}"
+        boot_from_volume: true
+        image: "{{ image }}"
+        volume_size: 15
+        key_name: "{{ key_name }}"
+        nics: port-name={{ node_prefix }}-k8s-{{ item }}
+        flavor: "{{ flavor }}"
+        terminate_volume: true
+        auto_ip: false
+      with_items: "{{ node_names }}"
+
+    - name: Gather facts about vms
+      os_server_facts:
+        server: "{{ node_prefix }}-k8s-*"
+
+    - name: Wait for ssh ready
+      wait_for: port=22 host="{{ item.private_v4 }}" search_regex=OpenSSH timeout=300 delay=5
+      with_items: "{{ openstack_servers }}"
+
+    - name: Add VMs to inventory
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_hosts
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 }}"
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup master group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_master
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(master)')
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup nodes group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_nodes
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(node)')
+      with_items: "{{ openstack_servers }}"
+
+- name: Prepare k8s hosts
+  hosts: k8s_hosts
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  pre_tasks:
+    - name: install python 2
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+    - name: Gather facts after python installation
+      setup: filter=ansible_*
+
+    - name: Install packages
+      apt: name={{ item }} state=present update_cache=yes
+      with_items:
+        - ansible
+        - iperf3
+        - unzip
+
+    - name: Build hosts file
+      lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present
+
+  roles:
+    - docker
+    - k8s_cli
+
+- import_playbook: reset_k8s.yml rebuild={{ rebuild }}
+
+- name: Set up k8s master
+  hosts: k8s_master
+  become: true
+  become_method: sudo
+  gather_facts: true
+
+  roles:
+    - kube_master
+
+- name: Set up k8s node
+  hosts: k8s_nodes
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  roles:
+    - kube_node
