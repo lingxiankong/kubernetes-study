@@ -24,3 +24,8 @@ If anything unexpected happened during the installation, just re-run using:
 ```shell
 ansible-playbook deploy_k8s.yml -e "rebuild=true"
 ```
+
+## Destroy
+
+- Delete the instances
+- Delete ports after instances deletion, using `neutron port-list -- --device-id <vm_id>` to get port attached to the instance.
