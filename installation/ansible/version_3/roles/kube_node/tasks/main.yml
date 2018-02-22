@@ -1,0 +1,17 @@
+---
+- name: Prepare openstack config file
+  template:
+    src: cloud-config.j2
+    dest: /etc/kubernetes/cloud-config
+
+- name: Modify kubelet arguments
+  shell: sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/cloud-config \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+- name: restart kubelet service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: kubelet
+
+- name: Join to cluster
+  shell: "{{ hostvars[groups['k8s_master'][0]]['join_str'] }}"

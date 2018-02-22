@@ -1,0 +1,64 @@
+---
+- name: Get kubeadmin token
+  shell: kubeadm token generate
+  register: token_out
+
+- name: Store token as var
+  set_fact:
+    token: "{{ token_out.stdout }}"
+
+- name: Prepare kubeadm.conf
+  template:
+    src: kubeadm.conf.j2
+    dest: "{{ ansible_env.HOME }}/kubeadm.conf"
+
+- name: Prepare openstack config file
+  template:
+    src: cloud-config.j2
+    dest: /etc/kubernetes/cloud-config
+
+- name: Modify kubelet arguments
+  shell: sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/cloud-config \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+- name: restart kubelet service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: kubelet
+
+- name: Init master
+  shell: kubeadm init --config {{ ansible_env.HOME }}/kubeadm.conf
+  register: kubeadm_init
+
+- fail:
+    msg: "kubeadm init command failed."
+  when: kubeadm_init.stdout.find ("kubeadm join") == -1
+
+- name: Store kubeadm join string
+  set_fact:
+    join_str: "{{ kubeadm_init.stdout | regex_search('kubeadm join(.*)$') }}"
+
+- name: Prepare kube config
+  shell: mkdir -p {{ item }}/.kube && cp -a /etc/kubernetes/admin.conf {{ item }}/.kube/config
+  with_items:
+    - "{{ ansible_env.HOME }}"
+    - /home/ubuntu
+
+- name: Allow pod on master
+  shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+- name: Download calico yaml
+  get_url:
+    url: https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+    dest: "{{ ansible_env.HOME }}/calico.yaml"
+    force: no
+
+- name: Change calico config
+  replace:
+    path: "{{ ansible_env.HOME }}/calico.yaml"
+    regexp: 'value: "always"'
+    replace: 'value: "off"\n            - name: CALICO_IPV4POOL_NAT_OUTGOING\n              value: "true"'
+    backup: yes
+
+- name: Install network plugin
+  shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
