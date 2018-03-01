@@ -1,7 +1,7 @@
 #!/usr/bin/env ansible-playbook
 # Usage:
 # source openrc
-# ansible-playbook site.yml -e "rebuild=false"
+# ansible-playbook site.yml -e "rebuild=false image=$image flavor=$flavor"
 # Don't forget to delete the ports when clearing up.
 ---
 - name: Deploy and prepare instances in OpenStack
@@ -13,8 +13,8 @@
     key_name: lingxian_pc
     flavor: 2ba44887-5fe3-44cc-8bca-e2b60a206a66
     security_groups:
-      - default
-    node_prefix: lingxiantest
+      - lingxian
+    node_prefix: lingxian
     # Mater hostname must contain 'master', node hostname contains 'node'
     node_names:
       - master
@@ -99,6 +99,7 @@
         - ansible
         - iperf3
         - unzip
+        - httpie
 
     - name: Build hosts file
       lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present

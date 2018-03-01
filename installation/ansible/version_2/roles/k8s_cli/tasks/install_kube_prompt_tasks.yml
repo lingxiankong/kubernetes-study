@@ -20,7 +20,7 @@
 
 - name: Copy kube-prompt to bin
   copy:
-    dest: /usr/local/bin/kprompt
+    dest: /usr/local/bin/kp
     src: "{{ dir.path }}/kube-prompt"
     mode: u+x
     remote_src: yes

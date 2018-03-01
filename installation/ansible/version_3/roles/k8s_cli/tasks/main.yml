@@ -22,3 +22,13 @@
     name: kube-shell
 
 - import_tasks: install_kube_prompt_tasks.yml
+
+- name: create shourcuts for cli
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.alias }}"
+    mode: u+x
+    remote_src: yes
+  with_items:
+    - { src: '/usr/bin/kubectl', alias: '/usr/bin/kc' }
+    - { src: '/usr/local/bin/kube-shell', alias: '/usr/local/bin/ks' }
