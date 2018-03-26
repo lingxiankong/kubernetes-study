@@ -1,6 +1,6 @@
 # Create k8s cluster using Ansible on top of OpenStack
 
-This script can only create kubernetes cluster including 1 master and multiple nodes. Version 2 playbook doesn't take openstack as k8s cloud provider, if you need integration with openstack, please refer to version 3.
+This script can only create kubernetes cluster including 1 master and multiple nodes. Version 2 playbook doesn't take openstack as k8s cloud provider, if you need integration with openstack, please refer to version 3. Version 2 is better than Version 1 because it's using roles.
 
 ## How to run
 ### Prepare your local environment
