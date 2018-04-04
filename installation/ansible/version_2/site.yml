@@ -21,6 +21,7 @@
     node_names:
       - master
       - node1
+      - node2
 
   tasks:
     # Create ports separately in order to setup allowed_address_pairs

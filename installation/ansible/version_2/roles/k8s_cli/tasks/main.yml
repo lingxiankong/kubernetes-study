@@ -13,17 +13,14 @@
     state: present
     update_cache: yes
   with_items:
-    - kubelet
-    - kubeadm
-    - kubectl
+    - kubelet=1.9.4-00
+    - kubectl=1.9.4-00
+    - kubeadm=1.9.4-00
 
 - import_tasks: install_kube_prompt_tasks.yml
 
-- name: create shourcuts for cli
-  copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.alias }}"
-    mode: u+x
-    remote_src: yes
-  with_items:
-    - { src: '/usr/bin/kubectl', alias: '/usr/bin/kc' }
+- name: create alias for cli
+  lineinfile:
+    path: /etc/bash.bashrc
+    create: true
+    line: 'alias kc="/usr/bin/kubectl"'
