@@ -107,7 +107,7 @@
 
   pre_tasks:
     - name: Install python 2
-      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+      raw: test -e /usr/bin/python || (apt -y update && apt -y upgrade && apt install -y python-minimal)
 
     - name: Install pip
       shell: which pip || (curl https://bootstrap.pypa.io/get-pip.py | python - && rm -f get-pip.py)

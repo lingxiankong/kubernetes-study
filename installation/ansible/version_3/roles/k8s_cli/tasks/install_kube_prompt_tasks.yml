@@ -18,9 +18,16 @@
     remote_src: yes
     creates: "{{ dir.path }}/kube-prompt"
 
-- name: Copy kube-prompt to bin
+- name: copy kube-prompt to /usr/bin
   copy:
-    dest: /usr/local/bin/kprompt
     src: "{{ dir.path }}/kube-prompt"
-    mode: u+x
+    dest: /usr/bin/kube-prompt
     remote_src: yes
+    force: no
+    mode: 0755
+
+- name: create alias for kube-prompt
+  lineinfile:
+    path: /etc/bash.bashrc
+    create: true
+    line: 'alias kp="/usr/bin/kube-prompt"'
