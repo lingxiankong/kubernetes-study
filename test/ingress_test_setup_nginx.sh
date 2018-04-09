@@ -3,12 +3,15 @@
 # 2. 创建 nginx backend service 用于显示 404 error 和实现 health api
 cat << EOF | kubectl create -f -
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-world-deployment
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: hello-world
   template:
     metadata:
       labels:
@@ -34,12 +37,15 @@ spec:
     app: hello-world
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: default-http-backend
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: default-http-backend
   template:
     metadata:
       labels:
@@ -88,19 +94,22 @@ folder=${HOME}/certs
 mkdir -p $folder
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${folder}/example.key -out ${folder}/example.crt -subj "/CN=api.sample.com"
 openssl dhparam -out ${folder}/dhparam.pem 2048
-kubectl create secret tls tls-certificate --key ${folder}/example.key --cert ${folder}/apache.crt
-kubectl create secret generic tls-dhparam --from-file=${folder}/example.pem
+kubectl create secret tls tls-certificate --key ${folder}/example.key --cert ${folder}/example.crt
+kubectl create secret generic tls-dhparam --from-file=${folder}/dhparam.pem
 
 # 4. 创建 ingress controller 服务，nginx 已经包含在 pod 里了，不需要单独部署。我使用了 NodePort 类型的 service，其实使用 LB 类型更合理。
 cat << 'EOF' | kubectl create -f -
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
 spec:
   replicas: 1
   revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      k8s-app: nginx-ingress-lb
   template:
     metadata:
       labels:
@@ -211,7 +220,7 @@ cat << EOF >> /etc/hosts
 EOF
 
 # 8. 访问域名，分别测试 http 和 https
-# $ curl http://api.sample.com:30954
+# $ curl http://api.sample.com:31509
 # hello-world-deployment-78d55b99f4-dhfr5
-# $ curl https://api.sample.com:31011 --cacert ${folder}/example.crt
+# $ curl https://api.sample.com:31330 --cacert ${folder}/example.crt
 # hello-world-deployment-78d55b99f4-dhfr5
