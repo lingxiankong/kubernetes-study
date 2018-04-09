@@ -1,7 +1,7 @@
 #!/usr/bin/env ansible-playbook
 # Usage:
 # source openrc
-# flavor=$(nova flavor-list | grep c4r8 | awk '{print $2}') && echo "flavor: $flavor"
+# flavor=$(nova flavor-list | grep c2r4 | awk '{print $2}') && echo "flavor: $flavor"
 # image=$(glance image-list | grep ubuntu-16.04-x86_64 | awk '$4 ~ /ubuntu-16.04-x86_64$/ {print $2}') && echo "image: $image"
 # ansible-playbook site.yml -e "rebuild=false image=$image flavor=$flavor"
 # Don't forget to delete the ports when clearing up.

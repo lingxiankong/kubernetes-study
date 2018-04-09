@@ -24,6 +24,7 @@
     dest: /usr/bin/kube-prompt
     remote_src: yes
     force: no
+    mode: 0755
 
 - name: create alias for kube-prompt
   lineinfile:
