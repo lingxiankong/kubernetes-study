@@ -93,6 +93,9 @@
     - name: install python 2
       raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
 
+    - name: Install pip
+      shell: which pip || (curl https://bootstrap.pypa.io/get-pip.py | python - && rm -f get-pip.py)
+
     - name: Gather facts after python installation
       setup: filter=ansible_*
 
@@ -100,8 +103,22 @@
       apt: name={{ item }} state=present update_cache=yes
       with_items:
         - ansible
-        - iperf3
         - unzip
+        - build-essential
+        - python-dev
+        - python-setuptools
+        - libffi-dev
+        - libxslt1-dev
+        - libxml2-dev
+        - libyaml-dev
+        - libssl-dev
+        - zlib1g-dev
+
+    - name: Install pypi libraries
+      pip: name={{ item }}
+      with_items:
+        - python-openstackclient
+        - python-octaviaclient
         - httpie
 
     - name: Build hosts file

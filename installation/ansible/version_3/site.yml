@@ -120,6 +120,22 @@
       with_items:
         - ansible
         - unzip
+        - build-essential
+        - python-dev
+        - python-setuptools
+        - libffi-dev
+        - libxslt1-dev
+        - libxml2-dev
+        - libyaml-dev
+        - libssl-dev
+        - zlib1g-dev
+
+    - name: Install pypi libraries
+      pip: name={{ item }}
+      with_items:
+        - python-openstackclient
+        - python-octaviaclient
+        - httpie
 
     - name: Build hosts file
       lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present
