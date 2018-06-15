@@ -1,0 +1,23 @@
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  advertiseAddress: {{ hostvars["localhost"]["vip_address"] }}
+  controlPlaneEndpoint: {{ hostvars["localhost"]["vip_address"] }}
+etcd:
+  endpoints:
+    - https://{{ ansible_customized_private_ip }}:2379
+{% for host in groups.k8s_master|difference([inventory_hostname]) %}
+    - https://{{ hostvars[host]["ansible_customized_private_ip"] }}:2379
+{% endfor %}
+  caFile: /etc/kubernetes/pki/etcd/ca.pem
+  certFile: /etc/kubernetes/pki/etcd/client.pem
+  keyFile: /etc/kubernetes/pki/etcd/client-key.pem
+networking:
+  podSubnet: 192.168.0.0/16
+apiServerCertSANs:
+  - {{ hostvars["localhost"]["vip_address"] }}
+  - {{ ansible_customized_private_ip }}
+apiServerExtraArgs:
+  apiserver-count: "3"
+cloudProvider: openstack
+kubernetesVersion: 1.10.0

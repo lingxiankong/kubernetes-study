@@ -1,0 +1,294 @@
+#!/usr/bin/env ansible-playbook
+# Usage:
+# source openrc
+# ansible-playbook site.yml -e "rebuild=false"
+# Don't forget to delete the ports when clearing up.
+---
+- name: Deploy and prepare instances in OpenStack
+  hosts: localhost
+
+  vars:
+    image: 9136e86b-14d9-4127-b3dd-f1cdb18b0dc6
+    network: network1
+    subnet: subnet
+    public_network: public
+    key_name: lingxian_pc
+    private_key: /home/vagrant/.ssh/id_rsa
+    flavor: 2ba44887-5fe3-44cc-8bca-e2b60a206a66
+    boot_from_vol: false
+    security_groups:
+      - default
+    node_prefix: lingxian-k8s
+    # Mater hostname must contain 'master', node hostname contains 'node'
+    # Make sure the vm name complies with k8s naming convention, should not
+    # contain '_'
+    node_names:
+      - master-0
+      - master-1
+      - master-2
+      - node-1
+    master_node: "{{ node_prefix }}-master-0"
+
+  tasks:
+    # Create ports separately in order to setup allowed_address_pairs
+    - name: Create ports
+      os_port:
+        state: present
+        name: "{{ node_prefix }}-{{ item }}"
+        network: "{{ network }}"
+        security_groups: "{{ security_groups }}"
+        allowed_address_pairs:
+          - ip_address: 192.168.0.0/16
+      with_items: "{{ node_names }}"
+
+    - name: Create VMs
+      os_server:
+        state: present
+        name: "{{ node_prefix }}-{{ item }}"
+        boot_from_volume: "{{ boot_from_vol | bool }}"
+        image: "{{ image }}"
+        volume_size: 15
+        key_name: "{{ key_name }}"
+        nics: port-name={{ node_prefix }}-{{ item }}
+        flavor: "{{ flavor }}"
+        terminate_volume: true
+        auto_ip: false
+      with_items: "{{ node_names }}"
+
+    - name: Associate floating ip if needed
+      os_floating_ip:
+        state: present
+        reuse: yes
+        network: "{{ public_network }}"
+        server: "{{ node_prefix }}-{{ item }}"
+      with_items: "{{ node_names }}"
+      when: public_network is defined
+
+    - name: Gather facts about vms
+      os_server_facts:
+        server: "{{ node_prefix }}-*"
+
+    - name: Wait for ssh ready
+      wait_for: port=22 host="{{ item.private_v4 if public_network is undefined else item.public_v4 }}" search_regex=OpenSSH timeout=300 delay=5
+      with_items: "{{ openstack_servers }}"
+
+    - name: Add VMs to inventory
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_hosts
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_ssh_private_key_file: "{{ private_key }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+        ansible_customized_private_ip: "{{ item.private_v4 }}"
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup master group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_master
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_ssh_private_key_file: "{{ private_key }}"
+        ansible_customized_private_ip: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(master)')
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup master 0 group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_master_0
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_ssh_private_key_file: "{{ private_key }}"
+        ansible_customized_private_ip: "{{ item.private_v4 }}"
+      when: '"master-0" in item.name'
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup slave masters group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_slave_masters
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_ssh_private_key_file: "{{ private_key }}"
+        ansible_customized_private_ip: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(master)') and "master-0" not in item.name
+      with_items: "{{ openstack_servers }}"
+
+    - name: Setup nodes group
+      add_host:
+        name: "{{ item.name }}"
+        groups: k8s_nodes
+        ansible_user: ubuntu
+        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_ssh_private_key_file: "{{ private_key }}"
+        ansible_customized_private_ip: "{{ item.private_v4 }}"
+      when: item.name | regex_search('(node)')
+      with_items: "{{ openstack_servers }}"
+
+    - name: Delete load balancer if exists
+      shell: openstack loadbalancer delete k8s_master_lb --cascade
+      ignore_errors: True
+
+    - name: Create load balancer
+      shell: openstack loadbalancer create --name k8s_master_lb --vip-subnet-id {{ subnet }} -f json
+      register: k8s_lb
+
+    - name: Wait for the load balancer to be active
+      shell: openstack loadbalancer show {{ (k8s_lb.stdout | from_json)['id'] }} -f value -c provisioning_status
+      register: lb_status
+      until: lb_status.stdout == "ACTIVE"
+      retries: 20
+      delay: 15
+
+    - name: Get vip address
+      set_fact: vip_address={{ (k8s_lb.stdout | from_json)['vip_address'] }}
+
+    - name: Create listener
+      shell: openstack loadbalancer listener create --name k8s_listener --protocol TCP --protocol-port 6443 {{ (k8s_lb.stdout | from_json)['id'] }} -f value -c id
+      register: listener_id
+
+    - name: Wait for the load balancer to be active
+      shell: openstack loadbalancer show {{ (k8s_lb.stdout | from_json)['id'] }} -f value -c provisioning_status
+      register: lb_status
+      until: lb_status.stdout == "ACTIVE"
+      retries: 10
+      delay: 5
+
+    - name: Create pool
+      shell: openstack loadbalancer pool create --protocol TCP --listener {{ listener_id.stdout }} --lb-algorithm ROUND_ROBIN -f value -c id
+      register: pool_id
+
+    - name: Wait for the load balancer to be active
+      shell: openstack loadbalancer show {{ (k8s_lb.stdout | from_json)['id'] }} -f value -c provisioning_status
+      register: lb_status
+      until: lb_status.stdout == "ACTIVE"
+      retries: 10
+      delay: 5
+
+    - name: Add master 0 to the pool
+      shell: openstack loadbalancer member create --address {{ hostvars[master_node]["ansible_customized_private_ip"] }} --subnet-id {{ subnet }} --protocol-port 6443 {{ pool_id.stdout }}
+
+- name: Install cfssl tool on local
+  hosts: localhost
+  gather_facts: false
+
+  roles:
+    - cfssl
+
+- name: Prepare k8s hosts
+  hosts: k8s_hosts
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  pre_tasks:
+    - name: Install python 2
+      raw: test -e /usr/bin/python || (apt -y update && apt -y upgrade && apt install -y python-minimal)
+
+    - name: Install pip
+      shell: which pip || (curl https://bootstrap.pypa.io/get-pip.py | python - && rm -f get-pip.py)
+
+    - name: Gather facts after python installation
+      setup: filter=ansible_*
+
+    - name: Install packages
+      apt: name={{ item }} state=present update_cache=yes
+      with_items:
+        - ansible
+        - unzip
+        - build-essential
+        - python-dev
+        - python-setuptools
+        - libffi-dev
+        - libxslt1-dev
+        - libxml2-dev
+        - libyaml-dev
+        - libssl-dev
+        - zlib1g-dev
+
+    - name: Install pypi libraries
+      pip: name={{ item }}
+      ignore_errors: True
+      with_items:
+        - httpie
+        - kube-shell
+
+    - name: Build hosts file
+      lineinfile: dest=/etc/hosts line="{{ ansible_customized_private_ip }} {{ ansible_hostname }}" state=present
+
+  roles:
+    - docker
+    - k8s_cli
+    - cfssl
+
+# This must run before we generate certs because it will delete the cert folder.
+- import_playbook: reset_k8s.yaml rebuild={{ rebuild }}
+
+- name: Certs and etcd
+  hosts: k8s_master
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Make sure masters can reach each other by hostname
+      lineinfile: dest=/etc/hosts line="{{ hostvars[item]["ansible_customized_private_ip"] }} {{ item }} " state=present
+      loop: "{{ groups['k8s_master'] }}"
+
+  roles:
+    - k8s_certs
+    - etcd
+
+- name: Set up master 0
+  hosts: k8s_master_0
+  become: true
+  become_method: sudo
+
+  roles:
+    - { role: kube_master, master_0: True }
+
+- name: Set up slave masters
+  hosts: k8s_slave_masters
+  become: true
+  become_method: sudo
+
+  roles:
+    - { role: kube_master, master_0: False }
+
+- name: Add slave masters to load balancer
+  hosts: localhost
+
+  tasks:
+    - name: Add master 0 to the pool
+      shell: openstack loadbalancer member create --address {{ hostvars[item]["ansible_customized_private_ip"] }} --subnet-id {{ subnet }} --protocol-port 6443 {{ pool_id.stdout }}; sleep 15
+      loop: "{{ groups['k8s_slave_masters'] }}"
+
+- name: Install calico on master 0
+  hosts: k8s_master_0
+
+  tasks:
+    - name: Download calico yaml
+      get_url:
+        url: https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+        dest: "{{ ansible_env.HOME }}/calico.yaml"
+        force: no
+
+    - name: Change calico config
+      replace:
+        path: "{{ ansible_env.HOME }}/calico.yaml"
+        regexp: 'value: "always"'
+        replace: 'value: "off"\n            - name: CALICO_IPV4POOL_NAT_OUTGOING\n              value: "true"'
+        backup: yes
+
+    - name: Install network plugin
+      shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
+
+- name: Set up k8s node
+  hosts: k8s_nodes
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  roles:
+    - kube_node

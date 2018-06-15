@@ -1,0 +1,18 @@
+{
+    "CN": "{{ ansible_hostname }}",
+    "hosts": [
+        "{{ ansible_hostname }}",
+        "{{ ansible_customized_private_ip }}"
+    ],
+    "key": {
+        "algo": "ecdsa",
+        "size": 256
+    },
+    "names": [
+        {
+            "C": "NZ",
+            "ST": "Wellington",
+            "L": "Wellington"
+        }
+    ]
+}

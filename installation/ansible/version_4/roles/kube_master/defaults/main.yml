@@ -1,0 +1,9 @@
+---
+# defaults file for kube_master
+master_0: "true"
+auth_url: http://192.168.121.15/identity/v3/
+user_id: 3fd32295751a41aca601021eba681a29
+password: password
+tenant_id: 84ce53873abe4d22a6f2491879e76048
+region: RegionOne
+subnet_id: 1740cd57-62ab-4f7f-a853-2038561060d1

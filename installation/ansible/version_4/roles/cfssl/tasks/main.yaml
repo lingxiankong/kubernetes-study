@@ -1,0 +1,16 @@
+---
+- name: Download statically linked cfssl binary
+  get_url:
+    url: https://pkg.cfssl.org/{{cfssl_version}}/cfssl_linux-amd64
+    dest: /usr/local/bin/cfssl
+    mode: 0755
+  tags:
+    - cfssl
+
+- name: Download statically linked cfssljson binary
+  get_url:
+    url: https://pkg.cfssl.org/{{cfssl_version}}/cfssljson_linux-amd64
+    dest: /usr/local/bin/cfssljson
+    mode: 0755
+  tags:
+    - cfssl

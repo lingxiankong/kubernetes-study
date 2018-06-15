@@ -1,0 +1,61 @@
+---
+- name: Copy k8s certs to slave masters
+  copy:
+    src: /tmp/k8s_certs/
+    dest: /etc/kubernetes/pki/
+  when: not (master_0 | bool)
+
+- name: sleep for 300 seconds to wait for etcd service to be healthy(hopefully)
+  wait_for: timeout=300
+
+- name: Prepare kubeadm config
+  template:
+    src: config.yaml.j2
+    dest: "{{ ansible_env.HOME }}/kubeadm.conf"
+
+- name: Prepare openstack config file
+  template:
+    src: cloud-config.j2
+    dest: /etc/kubernetes/cloud-config
+
+- name: Modify kubelet arguments
+  shell: sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/cloud-config \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+- name: restart kubelet service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: kubelet
+
+- name: Init master
+  shell: kubeadm init --config {{ ansible_env.HOME }}/kubeadm.conf
+  register: kubeadm_init
+
+- fail:
+    msg: "kubeadm init command failed."
+  when: kubeadm_init.stdout.find ("kubeadm join") == -1
+
+- name: Store kubeadm join string
+  set_fact:
+    join_str: "{{ kubeadm_init.stdout | regex_search('kubeadm join(.*)$') }}"
+
+- name: Prepare kube config
+  shell: mkdir -p {{ item }}/.kube && cp -a /etc/kubernetes/admin.conf {{ item }}/.kube/config
+  with_items:
+    - "{{ ansible_env.HOME }}"
+    - /home/ubuntu
+
+- name: Allow pod on master
+  shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+- name: Copy k8s certs to local
+  fetch:
+    src: "{{ item }}"
+    dest: /tmp/k8s_certs/
+    flat: yes
+  with_items:
+    - /etc/kubernetes/pki/ca.crt
+    - /etc/kubernetes/pki/ca.key
+    - /etc/kubernetes/pki/sa.pub
+    - /etc/kubernetes/pki/sa.key
+  when: master_0 | bool

@@ -1,0 +1,27 @@
+- name: Generate CA on local
+  local_action: shell chdir={{ role_path }}/files creates={{ role_path }}/files/ca.pem cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+  run_once: True
+
+- name: Generate etcd client cert on local
+  local_action: shell chdir={{ role_path }}/files creates={{ role_path }}/files/client.pem cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
+  run_once: True
+
+- name: Copy all the existing certs to remote
+  copy:
+    src: "{{ role_path }}/files/"
+    dest: /etc/kubernetes/pki/etcd/
+
+- name: Copy the server cert config to remote
+  template:
+    src: config.json.j2
+    dest: /etc/kubernetes/pki/etcd/config.json
+
+- name: Generate etcd server cert
+  shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server config.json | cfssljson -bare server
+  args:
+    chdir: /etc/kubernetes/pki/etcd/
+
+- name: Generate etcd peer cert
+  shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer config.json | cfssljson -bare peer
+  args:
+    chdir: /etc/kubernetes/pki/etcd/
