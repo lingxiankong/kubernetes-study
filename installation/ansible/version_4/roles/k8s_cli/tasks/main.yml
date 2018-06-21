@@ -1,0 +1,26 @@
+---
+- name: Add Kubernetes GPG key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Set up Kubernetes repository
+  apt_repository: repo='deb http://apt.kubernetes.io/ kubernetes-xenial main' state=present
+
+- name: Install kube CLIs
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - kubelet=1.10.4-00
+    - kubectl=1.10.4-00
+    - kubeadm=1.10.4-00
+
+# - import_tasks: install_kube_prompt_tasks.yml
+
+- name: create alias for cli
+  lineinfile:
+    path: /etc/bash.bashrc
+    create: true
+    line: 'alias kc="/usr/bin/kubectl"'

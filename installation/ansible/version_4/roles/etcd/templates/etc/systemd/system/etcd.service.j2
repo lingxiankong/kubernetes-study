@@ -1,0 +1,44 @@
+[Unit]
+Description=etcd
+Documentation=https://github.com/coreos/etcd
+Conflicts=etcd.service
+Conflicts=etcd2.service
+
+[Service]
+Type=notify
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=40000
+TimeoutStartSec=0
+
+{% set local_ip = hostvars[inventory_hostname]["ansible_customized_private_ip"] %}
+{% set local_host = inventory_hostname + "=https://" + local_ip + ":2380" %}
+{% set init_list = [local_host] %}
+{%- for host in groups.k8s_master|difference([inventory_hostname]) -%}
+  {% set init_str = host + "=https://" + hostvars[host]["ansible_customized_private_ip"] + ":2380" %}
+  {%- if init_list.append(init_str) -%} {%- endif -%}
+{%- endfor -%}
+
+ExecStart=/usr/local/bin/etcd \
+  --name="{{ inventory_hostname }}" \
+  --data-dir="{{ etcd_data_dir }}" \
+  --listen-client-urls="https://{{ local_ip }}:2379,https://127.0.0.1:2379" \
+  --advertise-client-urls="https://{{ local_ip }}:2379" \
+  --listen-peer-urls="https://{{ local_ip }}:2380" \
+  --initial-advertise-peer-urls="https://{{ local_ip }}:2380" \
+  --cert-file="/etc/kubernetes/pki/etcd/server.pem" \
+  --key-file="/etc/kubernetes/pki/etcd/server-key.pem" \
+  --client-cert-auth="true" \
+  --trusted-ca-file="/etc/kubernetes/pki/etcd/ca.pem" \
+  --peer-cert-file="/etc/kubernetes/pki/etcd/peer.pem" \
+  --peer-key-file="/etc/kubernetes/pki/etcd/peer-key.pem" \
+  --peer-client-cert-auth="true" \
+  --peer-trusted-ca-file="/etc/kubernetes/pki/etcd/ca.pem"\
+  --initial-cluster="{{ init_list | join(",") }}" \
+  --initial-cluster-token="my-etcd-token" \
+  --initial-cluster-state="new" \
+  --heartbeat-interval=1000 \
+  --election-timeout=5000
+
+[Install]
+WantedBy=multi-user.target

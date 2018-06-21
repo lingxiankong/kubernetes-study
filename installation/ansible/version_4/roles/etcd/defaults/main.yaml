@@ -1,0 +1,2 @@
+etcd_version: "v3.1.12"
+etcd_data_dir: "/var/lib/etcd"

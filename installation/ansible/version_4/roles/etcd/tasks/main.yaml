@@ -1,0 +1,25 @@
+- name: Download etcd binaries
+  shell: curl -sSL https://github.com/coreos/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-amd64.tar.gz | tar -xzv --strip-components=1 -C /usr/local/bin/
+  args:
+    creates: /usr/local/bin/etcd
+
+- name: Remove data dir for etcd
+  file:
+    path: "{{ etcd_data_dir }}"
+    state: absent
+
+- name: Create data dir for etcd
+  file:
+    path: "{{ etcd_data_dir }}"
+    state: directory
+
+- name: Copy the systemd unit file
+  template:
+    src: etc/systemd/system/etcd.service.j2
+    dest: /etc/systemd/system/etcd.service
+
+- name: Start etcd service
+  systemd:
+    name: etcd
+    state: started
+    daemon_reload: yes
