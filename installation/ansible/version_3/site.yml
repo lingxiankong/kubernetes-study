@@ -136,6 +136,7 @@
       with_items:
         - python-openstackclient
         - httpie
+        - kube-shell
 
     - name: Build hosts file
       lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present

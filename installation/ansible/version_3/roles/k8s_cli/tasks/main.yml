@@ -13,11 +13,11 @@
     state: present
     update_cache: yes
   with_items:
-    - kubelet=1.9.3-00
-    - kubectl=1.9.3-00
-    - kubeadm=1.9.3-00
+    - kubelet=1.10.4-00
+    - kubectl=1.10.4-00
+    - kubeadm=1.10.4-00
 
-- import_tasks: install_kube_prompt_tasks.yml
+# - import_tasks: install_kube_prompt_tasks.yml
 
 - name: create alias for cli
   lineinfile:
