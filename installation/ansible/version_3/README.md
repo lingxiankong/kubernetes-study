@@ -13,14 +13,19 @@ pip install ansible shade
 Take a look at the variables in `site.yml` file, you need to define your own as needed or pass those as ansible-playbook vars. Here is an script example that I used in my devstack environment.
 
 ```bash
-cat << EOF >> ~/.bashrc
-alias source_adm="cd ~/devstack; source openrc admin admin; cd -"
-alias source_demo="cd ~/devstack; source openrc demo demo; cd -"
-alias source_altdemo="cd ~/devstack; source openrc alt_demo alt_demo; cd -"
-alias os="openstack"
-alias ll='ls -l'
+echo 'alias source_adm="source ~/devstack/openrc admin admin"' >> ~/.bashrc
+echo 'alias source_demo="source ~/devstack/openrc demo demo"' >> ~/.bashrc
+echo 'alias source_altdemo="source ~/devstack/openrc alt_demo alt_demo"' >> ~/.bashrc
+echo 'alias os="openstack"' >> ~/.bashrc
+echo 'alias lb="openstack loadbalancer"' >> ~/.bashrc
+echo 'export PYTHONWARNINGS="ignore"' >> ~/.bashrc
+sed -i "/alias ll/c alias ll='ls -l'" ~/.bashrc
+cat <<'EOF' >> ~/.bashrc
+export PS1='\[\033[1;34m\]\u@\h [\w]\[\033[00m\]\n\[\033[01;31m\]$\[\033[00m\] '
 EOF
+source ~/.bashrc
 
+cd ~
 cat << EOF > pre.sh
 set -e
 pushd ~/devstack
@@ -33,7 +38,7 @@ ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 openstack keypair create --public-key ~/.ssh/id_rsa.pub testkey
 # set up the security group rules
 openstack security group rule create --proto icmp default
-openstack security group rule create --protocol tcp --dst-port 22 default
+openstack security group rule create --protocol tcp --dst-port 1:65535 default
 # register ubuntu image
 source openrc admin admin
 curl -SO http://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
@@ -43,6 +48,10 @@ glance image-create --name ubuntu-xenial \
             --disk-format qcow2 \
             --file xenial-server-cloudimg-amd64-disk1.img
 rm -f xenial-server-cloudimg-amd64-disk1.img
+# modify quota
+openstack quota set --instances 100 --cores 50 --secgroups 100 --secgroup-rules 500 demo
+# update ansible and install shade
+sudo apt-add-repository ppa:ansible/ansible -y && sudo apt-get update -y && sudo apt-get install -y ansible && sudo pip install shade
 popd
 EOF
 
