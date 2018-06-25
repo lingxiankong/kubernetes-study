@@ -41,7 +41,7 @@ openstack security group rule create --proto icmp default
 openstack security group rule create --protocol tcp --dst-port 1:65535 default
 # register ubuntu image
 source openrc admin admin
-curl -SO http://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
+curl -SOL http://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
 glance image-create --name ubuntu-xenial \
             --visibility public \
             --container-format bare \
