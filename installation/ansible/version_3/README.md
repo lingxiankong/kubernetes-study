@@ -78,7 +78,7 @@ EOF
 cp roles/kube_master/defaults/main.yml roles/kube_node/defaults/main.yml
 
 pushd ~/devstack && source openrc demo demo && popd
-ansible-playbook site.yml -e "rebuild=false flavor=6 image=$image network=$network key_name=testkey private_key=/home/ubuntu/.ssh/id_rsa node_prefix=test"
+ansible-playbook site.yml -e "rebuild=false flavor=6 image=$image network=$network key_name=testkey private_key=$HOME/.ssh/id_rsa node_prefix=test"
 popd
 ```
 
