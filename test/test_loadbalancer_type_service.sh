@@ -8,7 +8,7 @@ kind: Deployment
 metadata:
   name: hostname-echo-deployment
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: hostname-echo
