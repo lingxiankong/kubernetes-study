@@ -1,6 +1,6 @@
 ---
 - name: Init master
-  shell: kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version=v1.11.0
+  shell: kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version={{ k8s_version }}
   register: kubeadm_init
 
 - fail:
