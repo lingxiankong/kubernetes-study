@@ -1,0 +1,18 @@
+# Default values for openstack-ingress-controller.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+configmapName: "openstack-ingress-controller"
+image:
+  repository: "k8scloudprovider/octavia-ingress-controller"
+  tag: "v0.2.0"
+  pullPolicy: IfNotPresent
+
+openstack:
+  username:
+  password:
+  projectID:
+  authURL:
+  region: RegionOne
+  lbSubnetID:
+  lbFipNetwork:

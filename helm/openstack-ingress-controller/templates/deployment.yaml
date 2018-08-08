@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openstack-ingress-controller
+  namespace: kube-system
+  labels:
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      labels:
+        app: {{ .Chart.Name }}
+        chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    spec:
+      serviceAccountName: openstack-ingress-controller
+      containers:
+        - name: openstack-ingress-controller
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/octavia-ingress-controller
+            - --config=/etc/kubernetes/ingress-openstack.yaml
+          volumeMounts:
+            - name: ingress-config
+              mountPath: /etc/kubernetes
+      volumes:
+        - name: ingress-config
+          configMap:
+            name: {{ .Values.configmapName }}

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmapName }}
+  namespace: kube-system
+data:
+  ingress-openstack.yaml: |
+    openstack:
+        username: {{ .Values.openstack.username }}
+        password: {{ .Values.openstack.password }}
+        project_id: {{ .Values.openstack.projectID }}
+        auth_url: {{ .Values.openstack.authURL }}
+        region: {{ .Values.openstack.region }}
+    octavia:
+        subnet_id: {{ .Values.openstack.lbSubnetID }}
+        fip_network: {{ .Values.openstack.lbFipNetwork }}

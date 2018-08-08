@@ -1,0 +1,14 @@
+apiVersion: "v1"
+name: openstack-ingress-controller
+description: A Helm chart for OpenStack ingress controller
+version: 1.0.0
+home: https://github.com/kubernetes/cloud-provider-openstack
+sources:
+  - https://github.com/kubernetes/cloud-provider-openstack
+keywords:
+  - openstack
+  - ingress
+  - octavia
+maintainers:
+  - email: anlin.kong@gmail.com
+    name: Lingxian Kong
