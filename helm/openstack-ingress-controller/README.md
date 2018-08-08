@@ -18,5 +18,5 @@
     ```shell
     helm install --name os-ingress-controller-1 \
         -f myvals.yaml \
-        https://github.com/lingxiankong/kubernetes-study/releases/download/v1.0.0/openstack-ingress-controller-1.0.0.tgz
+        https://github.com/lingxiankong/kubernetes-study/releases/download/v0.1.0/openstack-ingress-controller-0.1.0.tgz
     ```
