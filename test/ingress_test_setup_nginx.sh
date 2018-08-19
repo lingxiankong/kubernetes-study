@@ -1,7 +1,7 @@
 #!/bin/bash
 # 1. 创建一个普通 service
 # 2. 创建 nginx backend service 用于显示 404 error 和实现 health api
-cat << EOF | kubectl create -f -
+cat << EOF | kubectl apply -f -
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -35,7 +35,7 @@ spec:
         targetPort: 8080
   selector:
     app: hello-world
-  type: NodePort
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -98,7 +98,7 @@ kubectl create secret tls ingress-tls-certificate --key ${folder}/example.key --
 kubectl create secret generic tls-dhparam --from-file=${folder}/dhparam.pem
 
 # 4. 创建 ingress controller 服务，nginx 已经包含在 pod 里了，不需要单独部署。我使用了 NodePort 类型的 service，其实使用 LB 类型更合理。
-cat << 'EOF' | kubectl create -f -
+cat << 'EOF' | kubectl apply -f -
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -190,7 +190,7 @@ EOF
 # default backend - 404
 
 # 6. 创建 ingress 规则
-cat << EOF | kubectl create -f -
+cat << EOF | kubectl apply -f -
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
