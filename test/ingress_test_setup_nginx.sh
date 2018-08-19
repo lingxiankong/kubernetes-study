@@ -18,7 +18,7 @@ spec:
         app: hello-world
     spec:
       containers:
-        - image: "lingxiankong/alpine-test"
+        - image: "lingxiankong/hello-server"
           imagePullPolicy: Always
           name: hello-world-container
           ports:
@@ -57,7 +57,7 @@ spec:
         # Any image is permissable as long as:
         # 1. It serves a 404 page at /
         # 2. It serves 200 on a /healthz endpoint
-        image: gcr.io/google_containers/defaultbackend:1.0
+        image: gcr.io/google_containers/defaultbackend:1.4
         livenessProbe:
           httpGet:
             path: /healthz
@@ -86,7 +86,7 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
-  type: NodePort
+  type: ClusterIP
 EOF
 
 # 3. 创建 nginx 使用的证书
@@ -94,7 +94,7 @@ folder=${HOME}/certs
 mkdir -p $folder
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${folder}/example.key -out ${folder}/example.crt -subj "/CN=api.sample.com"
 openssl dhparam -out ${folder}/dhparam.pem 2048
-kubectl create secret tls tls-certificate --key ${folder}/example.key --cert ${folder}/example.crt
+kubectl create secret tls ingress-tls-certificate --key ${folder}/example.key --cert ${folder}/example.crt
 kubectl create secret generic tls-dhparam --from-file=${folder}/dhparam.pem
 
 # 4. 创建 ingress controller 服务，nginx 已经包含在 pod 里了，不需要单独部署。我使用了 NodePort 类型的 service，其实使用 LB 类型更合理。
@@ -129,7 +129,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          image: "gcr.io/google_containers/nginx-ingress-controller:0.9.0-beta.5"
+          image: "gcr.io/google_containers/nginx-ingress-controller:0.9.0-beta.15"
           imagePullPolicy: Always
           livenessProbe:
             httpGet:
@@ -171,10 +171,10 @@ spec:
   selector:
     k8s-app: nginx-ingress-lb
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: nginx-ingress-controller-rbac
+  name: default-admin
 subjects:
   - kind: ServiceAccount
     name: default
@@ -203,7 +203,7 @@ spec:
   tls:
     - hosts:
       - api.sample.com
-      secretName: tls-certificate
+      secretName: ingress-tls-certificate
   rules:
   - host: api.sample.com
     http:
