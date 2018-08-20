@@ -1,5 +1,4 @@
 ---
-# defaults file for kube_master
 auth_url: http://192.168.121.15/identity/v3/
 user_id: 3fd32295751a41aca601021eba681a29
 password: password

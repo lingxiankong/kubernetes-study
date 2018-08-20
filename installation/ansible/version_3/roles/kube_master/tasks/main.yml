@@ -49,7 +49,7 @@
 
 - name: Download calico yaml
   get_url:
-    url: https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+    url: "{{ calico_yaml }}"
     dest: "{{ ansible_env.HOME }}/calico.yaml"
     force: no
 
@@ -60,5 +60,8 @@
     replace: 'value: "off"\n            - name: CALICO_IPV4POOL_NAT_OUTGOING\n              value: "true"'
     backup: yes
 
-- name: Install network plugin
+# - name: Create RBAC for Calico
+#   shell: kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+
+- name: Install Calico
   shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml

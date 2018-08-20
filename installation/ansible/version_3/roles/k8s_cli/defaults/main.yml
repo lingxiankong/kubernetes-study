@@ -1,2 +1,2 @@
 ---
-# defaults file for k8s_cli
+k8s_version: "1.10.4"

@@ -1,5 +1,7 @@
 ---
-# defaults file for kube_master
+k8s_version: "v1.10.4"
+calico_yaml: https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+
 auth_url: http://192.168.121.15/identity/v3/
 user_id: 3fd32295751a41aca601021eba681a29
 password: password

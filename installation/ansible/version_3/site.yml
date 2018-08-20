@@ -107,7 +107,7 @@
 
   pre_tasks:
     - name: Install python 2
-      raw: test -e /usr/bin/python || (apt -y update && apt -y upgrade && apt install -y python-minimal)
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
 
     - name: Install pip
       shell: which pip || (curl https://bootstrap.pypa.io/get-pip.py | python - && rm -f get-pip.py)
@@ -134,6 +134,7 @@
       pip: name={{ item }}
       ignore_errors: True
       with_items:
+        - pip==9.0.3
         - python-openstackclient
         - httpie
         - kube-shell
@@ -153,8 +154,16 @@
   become_method: sudo
   gather_facts: true
 
+  vars:
+    auth_url: "{{ auth_url }}"
+    user_id: "{{ user_id }}"
+    password: "{{ password }}"
+    tenant_id: "{{ tenant_id }}"
+    region: "{{ region }}"
+    subnet_id: "{{ subnet_id }}"
+
   roles:
-    - kube_master
+    - { role: kube_master, auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}" }
 
 - name: Set up k8s node
   hosts: k8s_nodes
@@ -162,5 +171,13 @@
   become_method: sudo
   gather_facts: false
 
+  vars:
+    auth_url: "{{ auth_url }}"
+    user_id: "{{ user_id }}"
+    password: "{{ password }}"
+    tenant_id: "{{ tenant_id }}"
+    region: "{{ region }}"
+    subnet_id: "{{ subnet_id }}"
+
   roles:
-    - kube_node
+    - { role: kube_node, auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}" }
