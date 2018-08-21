@@ -129,6 +129,7 @@
         - libyaml-dev
         - libssl-dev
         - zlib1g-dev
+        - jq
 
     - name: Install pypi libraries
       pip: name={{ item }}
