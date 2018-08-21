@@ -30,4 +30,4 @@
   lineinfile:
     path: /etc/bash.bashrc
     create: true
-    line: 'alias kp="/usr/bin/kube-prompt"'
+    line: 'alias kprompt="/usr/bin/kube-prompt"'
