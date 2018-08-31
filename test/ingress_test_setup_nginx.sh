@@ -6,40 +6,6 @@ cat << EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: hello-world
-  template:
-    metadata:
-      labels:
-        app: hello-world
-    spec:
-      containers:
-        - image: "lingxiankong/hello-server"
-          imagePullPolicy: Always
-          name: hello-world-container
-          ports:
-            - containerPort: 8080
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: hello-world-svc
-spec:
-  ports:
-     -  port: 8080
-        protocol: TCP
-        targetPort: 8080
-  selector:
-    app: hello-world
-  type: ClusterIP
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: default-http-backend
 spec:
   replicas: 1
@@ -190,34 +156,34 @@ EOF
 # default backend - 404
 
 # 6. 创建 ingress 规则
-cat << EOF | kubectl apply -f -
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: hello-world-ingress
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    nginx.org/ssl-services: "hello-world-svc"
-    ingress.kubernetes.io/ssl-redirect: "false"
-spec:
-  tls:
-    - hosts:
-      - api.sample.com
-      secretName: ingress-tls-certificate
-  rules:
-  - host: api.sample.com
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: hello-world-svc
-          servicePort: 8080
-EOF
+# cat << EOF | kubectl apply -f -
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   name: hello-world-ingress
+#   annotations:
+#     kubernetes.io/ingress.class: "nginx"
+#     nginx.org/ssl-services: "hello-world-svc"
+#     ingress.kubernetes.io/ssl-redirect: "false"
+# spec:
+#   tls:
+#     - hosts:
+#       - api.sample.com
+#       secretName: ingress-tls-certificate
+#   rules:
+#   - host: api.sample.com
+#     http:
+#       paths:
+#       - path: /
+#         backend:
+#           serviceName: hello-world-svc
+#           servicePort: 8080
+# EOF
 
 # 7. 编辑 /etc/hosts，配置到api.sample.com域名的映射，因为我是在 master 上访问，直接使用127.0.0.1
-cat << EOF >> /etc/hosts
-127.0.0.1 api.sample.com
-EOF
+# cat << EOF >> /etc/hosts
+# 127.0.0.1 api.sample.com
+# EOF
 
 # 8. 访问域名，分别测试 http 和 https
 # $ curl http://api.sample.com:31509
