@@ -1,4 +1,5 @@
 ---
+# apt-get install -y apt-transport-https ca-certificates curl
 - name: Install packages
   apt: name={{ item }} state=present update_cache=yes
   with_items:
@@ -6,14 +7,17 @@
     - ca-certificates
     - curl
 
+# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 - name: Add Docker’s official GPG key
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
 
+# add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
 - name: Set up the stable repository
   apt_repository: repo='deb https://download.docker.com/linux/ubuntu xenial stable' state=present
 
+# apt-get update; apt install -y docker-ce=17.03.2~ce-0~ubuntu-xenial
 - name: Install docker-ce
   apt:
     name: docker-ce={{ docker_version }}

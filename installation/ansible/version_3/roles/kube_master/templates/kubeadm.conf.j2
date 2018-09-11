@@ -1,7 +1,12 @@
+apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
-apiVersion: kubeadm.k8s.io/v1alpha1
-cloudProvider: openstack
 kubernetesVersion: {{ k8s_version }}
+networking:
+  podSubnet: 192.168.0.0/16
 unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:{{ k8s_version }}"
-podSubnet: 192.168.0.0/16
-token: {{ token }}
+apiServerExtraArgs:
+  cloud-provider: openstack
+  cloud-config: /etc/kubernetes/pki/cloud-config
+controllerManagerExtraArgs:
+  cloud-provider: openstack
+  cloud-config: /etc/kubernetes/pki/cloud-config

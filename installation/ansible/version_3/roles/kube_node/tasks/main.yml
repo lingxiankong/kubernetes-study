@@ -1,11 +1,16 @@
 ---
+- name: Make sure /etc/kubernetes/pki exists
+  file:
+    path: /etc/kubernetes/pki
+    state: directory
+
 - name: Prepare openstack config file
   template:
     src: cloud-config.j2
-    dest: /etc/kubernetes/cloud-config
+    dest: /etc/kubernetes/pki/cloud-config
 
 - name: Modify kubelet arguments
-  shell: sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/cloud-config \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+  shell: sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/pki\/cloud-config \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
 - name: restart kubelet service
   systemd:

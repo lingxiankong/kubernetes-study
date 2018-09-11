@@ -32,6 +32,6 @@
 
   tasks:
     - name: Reset
-      shell: kubeadm reset
+      shell: kubeadm reset -f
       when: rebuild | bool
       ignore_errors: True
