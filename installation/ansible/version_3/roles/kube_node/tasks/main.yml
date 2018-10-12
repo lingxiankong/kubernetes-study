@@ -20,3 +20,4 @@
 
 - name: Join to cluster
   shell: "{{ hostvars[groups['k8s_master'][0]]['join_str'] }}"
+  when: bootstrap | bool
