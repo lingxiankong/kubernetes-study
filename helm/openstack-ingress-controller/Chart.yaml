@@ -1,7 +1,7 @@
 apiVersion: "v1"
 name: openstack-ingress-controller
 description: A Helm chart for OpenStack ingress controller
-version: 0.1.0
+version: 0.2.0
 home: https://github.com/kubernetes/cloud-provider-openstack
 sources:
   - https://github.com/kubernetes/cloud-provider-openstack

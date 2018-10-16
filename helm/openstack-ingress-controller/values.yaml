@@ -5,9 +5,9 @@
 configmapName: "openstack-ingress-controller"
 image:
   repository: "k8scloudprovider/octavia-ingress-controller"
-  tag: "v0.2.0"
+  tag: "v0.3.0"
   pullPolicy: IfNotPresent
-
+clusterName: mycluster
 openstack:
   username:
   password:

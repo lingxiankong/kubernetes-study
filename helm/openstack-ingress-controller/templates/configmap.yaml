@@ -4,7 +4,8 @@ metadata:
   name: {{ .Values.configmapName }}
   namespace: kube-system
 data:
-  ingress-openstack.yaml: |
+  openstack-ingress-controller.yaml: |
+    clusterName: {{ .Values.clusterName }}
     openstack:
         username: {{ .Values.openstack.username }}
         password: {{ .Values.openstack.password }}

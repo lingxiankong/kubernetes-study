@@ -27,7 +27,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /bin/octavia-ingress-controller
-            - --config=/etc/kubernetes/ingress-openstack.yaml
+            - --config=/etc/kubernetes/openstack-ingress-controller.yaml
           volumeMounts:
             - name: ingress-config
               mountPath: /etc/kubernetes
