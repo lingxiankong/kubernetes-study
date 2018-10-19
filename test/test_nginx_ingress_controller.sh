@@ -1,5 +1,5 @@
 # 安装
-helm install stable/nginx-ingress --name nginx-ingress-controller --set rbac.create=true
+helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
 
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
