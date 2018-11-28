@@ -24,6 +24,7 @@
     node_names:
       - master
       - node1
+    pod_cidr: 192.168.0.0/16
 
   tasks:
     # Create ports separately in order to setup allowed_address_pairs
@@ -34,7 +35,7 @@
         network: "{{ network }}"
         security_groups: "{{ security_groups }}"
         allowed_address_pairs:
-          - ip_address: 192.168.0.0/16
+          - ip_address: "{{ pod_cidr }}"
       with_items: "{{ node_names }}"
 
     - name: Create VMs
@@ -159,6 +160,7 @@
   gather_facts: true
 
   vars:
+    pod_cidr: 192.168.0.0/16
     auth_url: "{{ auth_url }}"
     user_id: "{{ user_id }}"
     password: "{{ password }}"
@@ -167,7 +169,7 @@
     subnet_id: "{{ subnet_id }}"
 
   roles:
-    - { role: kube_master, auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}" }
+    - { role: kube_master, pod_cidr: "{{ pod_cidr }}", auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}" }
 
 - name: Set up k8s node
   hosts: k8s_nodes

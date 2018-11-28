@@ -44,8 +44,22 @@
 - name: Allow pod on master
   shell: kubectl taint nodes --all node-role.kubernetes.io/master-
 
-- name: Install Calico
+- name: Install Calico RBAC
   shell: kubectl apply -f {{ item }}
   with_items:
     - https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
-    - https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+
+- name: Download calico manifest file if needed
+  get_url:
+    url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+    dest: "{{ ansible_env.HOME }}/calico.yaml"
+    force: no
+
+- name: Modify the pod cidr in calico manifest file
+  replace:
+    path: "{{ ansible_env.HOME }}/calico.yaml"
+    regexp: '(^.*value: )"192.168.*'
+    replace: '\1"{{ pod_cidr }}"'
+
+- name: Install Calico
+  shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
