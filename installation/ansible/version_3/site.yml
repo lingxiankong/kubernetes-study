@@ -120,29 +120,33 @@
       setup: filter=ansible_*
 
     - name: Install packages
-      apt: name={{ item }} state=present update_cache=yes
-      with_items:
-        - ansible
-        - unzip
-        - build-essential
-        - python-dev
-        - python-setuptools
-        - libffi-dev
-        - libxslt1-dev
-        - libxml2-dev
-        - libyaml-dev
-        - libssl-dev
-        - zlib1g-dev
-        - jq
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - ansible
+          - unzip
+          - build-essential
+          - python-dev
+          - python-setuptools
+          - libffi-dev
+          - libxslt1-dev
+          - libxml2-dev
+          - libyaml-dev
+          - libssl-dev
+          - zlib1g-dev
+          - jq
 
     - name: Install pypi libraries
-      pip: name={{ item }}
+      pip:
+        name: "{{ libraries }}"
       ignore_errors: True
-      with_items:
-        - pip==9.0.3
-        - python-openstackclient
-        - httpie
-        - kube-shell
+      vars:
+        libraries:
+          - python-openstackclient
+          - httpie
 
     - name: Build hosts file
       lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present

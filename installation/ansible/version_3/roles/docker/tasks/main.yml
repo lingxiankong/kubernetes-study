@@ -1,11 +1,15 @@
 ---
 # apt-get install -y apt-transport-https ca-certificates curl
 - name: Install packages
-  apt: name={{ item }} state=present update_cache=yes
-  with_items:
-    - apt-transport-https
-    - ca-certificates
-    - curl
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
 
 # curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 - name: Add Docker’s official GPG key
