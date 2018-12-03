@@ -1,5 +1,5 @@
 ---
-k8s_version: "v1.11.1"
+k8s_version: "v1.12.3"
 pod_cidr: "192.168.0.0/16"
 
 auth_url: http://192.168.121.15/identity/v3/
