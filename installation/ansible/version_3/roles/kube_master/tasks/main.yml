@@ -14,11 +14,17 @@
     src: cloud-config.j2
     dest: /etc/kubernetes/pki/cloud-config
 
+- name: Check if kubelet config file needs change
+  shell: grep -q "/etc/kubernetes/pki/cloud-config" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+  register: check_kubelet
+  ignore_errors: True
+
 - name: Modify kubelet arguments
   replace:
     path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
     regexp: '(.*)KUBELET_KUBECONFIG_ARGS=(.*)$'
-    replace: '\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=/etc/kubernetes/pki/cloud-config\2'
+    replace: '\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=/etc/kubernetes/pki/cloud-config \2'
+  when: check_kubelet.rc != 0
 
 - name: restart kubelet service
   systemd:
