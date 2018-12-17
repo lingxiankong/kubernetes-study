@@ -1,0 +1,2 @@
+---
+ccm_image: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:latest"

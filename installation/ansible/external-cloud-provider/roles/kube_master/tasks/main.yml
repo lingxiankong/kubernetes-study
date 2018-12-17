@@ -1,0 +1,95 @@
+---
+- name: Prepare kubeadm.conf
+  template:
+    src: kubeadm.conf.j2
+    dest: "{{ ansible_env.HOME }}/kubeadm.conf"
+
+- name: Make sure /etc/kubernetes exists
+  file:
+    path: /etc/kubernetes
+    state: directory
+
+- name: Prepare openstack config file
+  template:
+    src: cloud-config.j2
+    dest: /etc/kubernetes/cloud-config
+
+- name: Check if kubelet config file needs change
+  shell: grep -q "external" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+  register: check_kubelet
+  ignore_errors: True
+
+- name: Modify kubelet arguments
+  replace:
+    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    regexp: '(.*)KUBELET_KUBECONFIG_ARGS=(.*)$'
+    replace: '\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=external \2'
+  when: check_kubelet.rc != 0
+
+- name: restart kubelet service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: kubelet
+
+- name: Init master
+  shell: kubeadm init --config {{ ansible_env.HOME }}/kubeadm.conf
+  register: kubeadm_init
+
+- fail:
+    msg: "kubeadm init command failed."
+  when: kubeadm_init.stdout.find ("kubeadm join") == -1
+
+- name: Store kubeadm join string
+  set_fact:
+    join_str: "{{ kubeadm_init.stdout | regex_search('kubeadm join(.*)$') }}"
+
+- name: Prepare kube config
+  shell: mkdir -p {{ item }}/.kube && cp -a /etc/kubernetes/admin.conf {{ item }}/.kube/config
+  loop:
+    - "{{ ansible_env.HOME }}"
+    - /home/ubuntu
+
+- name: Allow pod on master
+  shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+- name: Install Calico RBAC
+  shell: kubectl apply -f {{ item }}
+  loop:
+    - https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
+
+- name: Download calico manifest file if needed
+  get_url:
+    url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+    dest: "{{ ansible_env.HOME }}/calico.yaml"
+    force: no
+
+- name: Modify the pod cidr in calico manifest file
+  replace:
+    path: "{{ ansible_env.HOME }}/calico.yaml"
+    regexp: '(^.*value: )"192.168.*'
+    replace: '\1"{{ pod_cidr }}"'
+
+- name: Install Calico
+  shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
+
+- name: Allow KCM to access cloud-config file - 1
+  blockinfile:
+    path: /etc/kubernetes/manifests/kube-controller-manager.yaml
+    insertafter: "volumes:"
+    marker: "# {mark} cloud-config volume"
+    block: |2
+        - name: cloud-config
+          hostPath:
+            path: /etc/kubernetes/cloud-config
+            type: FileOrCreate
+
+- name: Allow KCM to access cloud-config file - 2
+  blockinfile:
+    path: /etc/kubernetes/manifests/kube-controller-manager.yaml
+    insertafter: "volumeMounts:"
+    marker: "# {mark} cloud-config volume mount"
+    block: |2
+          - mountPath: /etc/kubernetes/cloud-config
+            name: cloud-config
+            readOnly: true

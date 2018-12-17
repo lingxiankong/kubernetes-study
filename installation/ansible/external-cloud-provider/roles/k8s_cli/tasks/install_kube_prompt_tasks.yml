@@ -1,0 +1,33 @@
+---
+- name: Create temporary directory
+  file:
+    state: directory
+    path: ~/kube-prompt
+  register: dir
+
+- name: Download kube-prompt
+  get_url:
+    url: https://github.com/c-bata/kube-prompt/releases/download/{{ kube_prompt_version }}/kube-prompt_{{ kube_prompt_version }}_linux_amd64.zip
+    dest: "{{ dir.path }}/kube-prompt.zip"
+    force: no
+
+- name: Unarchive kube-prompt
+  unarchive:
+    src: "{{ dir.path }}/kube-prompt.zip"
+    dest: "{{ dir.path }}"
+    remote_src: yes
+    creates: "{{ dir.path }}/kube-prompt"
+
+- name: copy kube-prompt to /usr/bin
+  copy:
+    src: "{{ dir.path }}/kube-prompt"
+    dest: /usr/bin/kube-prompt
+    remote_src: yes
+    force: no
+    mode: 0755
+
+- name: create alias for kube-prompt
+  lineinfile:
+    path: /etc/bash.bashrc
+    create: true
+    line: 'alias kprompt="/usr/bin/kube-prompt"'
