@@ -1,9 +1,9 @@
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
-kubernetesVersion: {{ k8s_version }}
+kubernetesVersion: v{{ k8s_version }}
 networking:
   podSubnet: {{ pod_cidr }}
-unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:{{ k8s_version }}"
+unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:v{{ k8s_version }}"
 cloudProvider: external
 apiServerExtraArgs:
   enable-admission-plugins: NodeRestriction,Initializers
