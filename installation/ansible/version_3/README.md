@@ -1,6 +1,6 @@
-# Create k8s cluster using Ansible on top of OpenStack
+# Create k8s cluster using ansible on top of OpenStack
 
-This script can only create kubernetes cluster including 1 master and multiple nodes. Kubernetes cluster will use OpenStack as cloud provider.
+This script can only create kubernetes cluster including 1 master and multiple nodes. Kubernetes cluster will use OpenStack as cloud provider. If you want to use separate openstack cloud controller manager, please see [here](https://github.com/lingxiankong/kubernetes-study/tree/master/installation/ansible/external-cloud-provider)
 
 ## How to run
 ### Prepare your local environment
@@ -10,7 +10,7 @@ pip install ansible shade
 ```
 
 ### Install
-Take a look at the variables in `site.yml` file, you need to define your own as needed or pass those as ansible-playbook vars. Here is an script example that I used in my devstack environment.
+Take a look at the variables in `site.yaml` file, you need to define your own as needed or pass those as ansible-playbook vars. Here is an script example that I used in my **devstack** environment.
 
 ```bash
 echo 'alias source_adm="source ~/devstack/openrc admin admin"' >> ~/.bashrc
@@ -82,13 +82,10 @@ source_adm
 user_id=$(openstack user show demo -c id -f value)
 tenant_id=$(openstack project show demo -c id -f value)
 source_demo
-ansible-playbook site.yml -e "node_prefix=test rebuild=false flavor=6 image=$image network=$network subnet=$subnet_id key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id k8s_version=1.12.3"
+ansible-playbook site.yaml -e "node_prefix=test rebuild=false flavor=6 image=$image network=$network key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id k8s_version=1.13.2"
 ```
 
-If anything unexpected happened during the installation, just re-run using:
-```shell
-ansible-playbook site.yml -e "rebuild=true"
-```
+If anything unexpected happened during the installation, just re-run the command but changing `rebuild=true`.
 
 ## Clean up
 

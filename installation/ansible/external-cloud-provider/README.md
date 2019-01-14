@@ -1,4 +1,4 @@
-# Create k8s cluster using Ansible on top of OpenStack
+# Create k8s cluster(>= 1.13) using ansible on top of OpenStack
 
 This script can only create kubernetes cluster including 1 master and multiple nodes. Kubernetes cluster will use OpenStack as cloud provider and will deploy cloud-provider-openstack as a separate cloud controller manager.
 
@@ -10,7 +10,7 @@ pip install ansible shade
 ```
 
 ### Install
-Take a look at the variables in `site.yml` file, you need to define your own as needed or pass those as ansible-playbook vars. Here is an script example that I used in my **devstack** environment.
+Take a look at the variables in `site.yaml` file, you need to define your own as needed or pass those as ansible-playbook vars. Here is an script example that I used in my **devstack** environment.
 
 ```bash
 echo 'alias source_adm="source ~/devstack/openrc admin admin"' >> ~/.bashrc
@@ -82,13 +82,10 @@ source_adm
 user_id=$(openstack user show demo -c id -f value)
 tenant_id=$(openstack project show demo -c id -f value)
 source_demo
-ansible-playbook site.yml -e "node_prefix=test-external rebuild=false flavor=d3 image=$image network=$network subnet=$subnet_id key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id bootstrap=true pod_cidr=10.53.0.0/16 ccm_image=lingxiankong/openstack-cloud-controller-manager:1.13.1-rc k8s_version=1.12.3"
+ansible-playbook site.yaml -e "node_prefix=lingxian rebuild=false flavor=d3 image=$image network=$network key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id bootstrap=true pod_subnet=10.53.0.0/16 ccm_image=lingxiankong/openstack-cloud-controller-manager:1.13.1-rc k8s_version=1.13.2"
 ```
 
-If anything unexpected happened during the installation, just re-run using:
-```shell
-ansible-playbook site.yml -e "rebuild=true"
-```
+If anything unexpected happened during the installation, just re-run the command but changing `rebuild=true`.
 
 ## Clean up
 

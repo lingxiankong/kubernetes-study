@@ -20,7 +20,7 @@
     node_names:
       - master
       - node1
-    pod_cidr: 192.168.0.0/16
+    pod_subnet: 192.168.0.0/16
 
   tasks:
     # Create ports separately in order to setup allowed_address_pairs
@@ -31,7 +31,7 @@
         network: "{{ network }}"
         security_groups: "{{ security_groups }}"
         allowed_address_pairs:
-          - ip_address: "{{ pod_cidr }}"
+          - ip_address: "{{ pod_subnet }}"
       with_items: "{{ node_names }}"
 
     - name: Create VMs
@@ -102,9 +102,6 @@
   become_method: sudo
   gather_facts: false
 
-  vars:
-    k8s_version: 1.12.3
-
   pre_tasks:
     - name: Wait for cloud init to finish
       raw: cloud-init status --wait
@@ -155,9 +152,9 @@
 
   roles:
     - docker
-    - { role: k8s_cli, k8s_version: "{{ k8s_version }}" }
+    - k8s_cli
 
-- import_playbook: reset_k8s.yml rebuild={{ rebuild }}
+- import_playbook: reset_k8s.yaml rebuild={{ rebuild }}
 
 - name: Set up k8s master
   hosts: k8s_master
@@ -165,18 +162,8 @@
   become_method: sudo
   gather_facts: true
 
-  vars:
-    pod_cidr: "192.168.0.0/16"
-    auth_url: "{{ auth_url }}"
-    user_id: "{{ user_id }}"
-    password: "{{ password }}"
-    tenant_id: "{{ tenant_id }}"
-    region: "{{ region }}"
-    subnet_id: "{{ subnet_id }}"
-    k8s_version: 1.12.3
-
   roles:
-    - { role: kube_master, pod_subnet: "{{ pod_cidr }}", auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}", k8s_version: "{{ k8s_version }}" }
+    - kube_master
 
 - name: Set up k8s node
   hosts: k8s_nodes
@@ -184,17 +171,8 @@
   become_method: sudo
   gather_facts: false
 
-  vars:
-    auth_url: "{{ auth_url }}"
-    user_id: "{{ user_id }}"
-    password: "{{ password }}"
-    tenant_id: "{{ tenant_id }}"
-    region: "{{ region }}"
-    subnet_id: "{{ subnet_id }}"
-    bootstrap: "{{ bootstrap }}"
-
   roles:
-    - { role: kube_node, auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}", bootstrap: "{{ bootstrap }}" }
+    - kube_node
 
 - name: Set up cloud controller manager
   hosts: k8s_master
@@ -202,8 +180,5 @@
   become_method: sudo
   gather_facts: true
 
-  vars:
-    ccm_image: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:latest"
-
   roles:
-    - { role: kube_cloud_controller_manager, ccm_image: "{{ ccm_image }}"}
+    - kube_cloud_controller_manager

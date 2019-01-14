@@ -1,12 +1,23 @@
-apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
 kubernetesVersion: v{{ k8s_version }}
 networking:
   podSubnet: {{ pod_subnet }}
 unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:v{{ k8s_version }}"
-cloudProvider: external
-apiServerExtraArgs:
-  enable-admission-plugins: NodeRestriction,Initializers
-  runtime-config: admissionregistration.k8s.io/v1alpha1
-controllerManagerExtraArgs:
-  external-cloud-volume-plugin: openstack
+apiServer:
+  extraArgs:
+    cloud-provider: "external"
+    enable-admission-plugins: NodeRestriction,Initializers
+    runtime-config: admissionregistration.k8s.io/v1alpha1
+controllerManager:
+  extraArgs:
+    cloud-provider: "external"
+    external-cloud-volume-plugin: "openstack"
+    cloud-config: "/etc/kubernetes/cloud-config"
+  extraVolumes:
+    - name: cloud-config
+      hostPath: "/etc/kubernetes/cloud-config"
+      mountPath: "/etc/kubernetes/cloud-config"
+      readOnly: true
+      pathType: File

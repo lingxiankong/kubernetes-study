@@ -72,24 +72,3 @@
 
 - name: Install Calico
   shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
-
-- name: Allow KCM to access cloud-config file - 1
-  blockinfile:
-    path: /etc/kubernetes/manifests/kube-controller-manager.yaml
-    insertafter: "volumes:"
-    marker: "# {mark} cloud-config volume"
-    block: |2
-        - name: cloud-config
-          hostPath:
-            path: /etc/kubernetes/cloud-config
-            type: FileOrCreate
-
-- name: Allow KCM to access cloud-config file - 2
-  blockinfile:
-    path: /etc/kubernetes/manifests/kube-controller-manager.yaml
-    insertafter: "volumeMounts:"
-    marker: "# {mark} cloud-config volume mount"
-    block: |2
-          - mountPath: /etc/kubernetes/cloud-config
-            name: cloud-config
-            readOnly: true
