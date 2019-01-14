@@ -170,7 +170,7 @@
   gather_facts: true
 
   vars:
-    pod_cidr: 192.168.0.0/16
+    pod_cidr: "192.168.0.0/16"
     auth_url: "{{ auth_url }}"
     user_id: "{{ user_id }}"
     password: "{{ password }}"
@@ -180,7 +180,7 @@
     k8s_version: 1.12.3
 
   roles:
-    - { role: kube_master, pod_cidr: "{{ pod_cidr }}", auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}", k8s_version: "{{ k8s_version }}" }
+    - { role: kube_master, pod_subnet: "{{ pod_cidr }}", auth_url: "{{ auth_url }}", user_id: "{{ user_id }}", password: "{{ password }}", tenant_id: "{{ tenant_id }}", region: "{{ region }}", subnet_id: "{{ subnet_id }}", k8s_version: "{{ k8s_version }}" }
 
 - name: Set up k8s node
   hosts: k8s_nodes

@@ -1,6 +1,6 @@
 ---
 k8s_version: "1.12.3"
-pod_cidr: "192.168.0.0/16"
+pod_subnet: "192.168.0.0/16"
 
 auth_url: http://192.168.121.15/identity/v3/
 user_id: 3fd32295751a41aca601021eba681a29

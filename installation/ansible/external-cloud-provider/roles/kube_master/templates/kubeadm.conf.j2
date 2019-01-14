@@ -2,7 +2,7 @@ apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 kubernetesVersion: v{{ k8s_version }}
 networking:
-  podSubnet: {{ pod_cidr }}
+  podSubnet: {{ pod_subnet }}
 unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:v{{ k8s_version }}"
 cloudProvider: external
 apiServerExtraArgs:

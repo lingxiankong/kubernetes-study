@@ -68,7 +68,7 @@
   replace:
     path: "{{ ansible_env.HOME }}/calico.yaml"
     regexp: '(^.*value: )"192.168.*'
-    replace: '\1"{{ pod_cidr }}"'
+    replace: '\1"{{ pod_subnet }}"'
 
 - name: Install Calico
   shell: kubectl apply -f {{ ansible_env.HOME }}/calico.yaml
