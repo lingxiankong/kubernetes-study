@@ -203,7 +203,7 @@
   gather_facts: true
 
   vars:
-    ccm_image: "{{ ccm_image }}"
+    ccm_image: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:latest"
 
   roles:
     - { role: kube_cloud_controller_manager, ccm_image: "{{ ccm_image }}"}
