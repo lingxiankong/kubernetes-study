@@ -82,7 +82,7 @@ source_adm
 user_id=$(openstack user show demo -c id -f value)
 tenant_id=$(openstack project show demo -c id -f value)
 source_demo
-ansible-playbook site.yml -e "rebuild=false flavor=6 image=$image network=$network subnet=$subnet_id key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id"
+ansible-playbook site.yml -e "node_prefix=test rebuild=false flavor=6 image=$image network=$network subnet=$subnet_id key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id k8s_version=1.12.3"
 ```
 
 If anything unexpected happened during the installation, just re-run using:
