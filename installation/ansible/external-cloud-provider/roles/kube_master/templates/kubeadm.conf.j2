@@ -9,15 +9,7 @@ apiServer:
   extraArgs:
     cloud-provider: "external"
     enable-admission-plugins: NodeRestriction,Initializers
-    runtime-config: admissionregistration.k8s.io/v1alpha1
+    runtime-config: admissionregistration.k8s.io/v1alpha1=true
 controllerManager:
   extraArgs:
     cloud-provider: "external"
-    external-cloud-volume-plugin: "openstack"
-    cloud-config: "/etc/kubernetes/cloud-config"
-  extraVolumes:
-    - name: cloud-config
-      hostPath: "/etc/kubernetes/cloud-config"
-      mountPath: "/etc/kubernetes/cloud-config"
-      readOnly: true
-      pathType: File

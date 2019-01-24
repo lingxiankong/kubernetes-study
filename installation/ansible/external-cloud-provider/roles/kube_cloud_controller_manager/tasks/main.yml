@@ -1,31 +1,44 @@
 ---
 - name: Create cloud-config configmap
   shell: kubectl create configmap cloud-config --from-file=/etc/kubernetes/cloud-config -n kube-system
+  ignore_errors: True
+
+- name: Create CCM manifests directory
+  file: path={{ ansible_env.HOME }}/openstack-cloud-controller-manager state=directory mode=0755
 
 - name: Create CCM manifest file
   template:
     src: openstack-cloud-controller-manager-ds.yaml.j2
-    dest: "{{ ansible_env.HOME }}/openstack-cloud-controller-manager-ds.yaml"
+    dest: "{{ ansible_env.HOME }}/openstack-cloud-controller-manager/openstack-cloud-controller-manager-ds.yaml"
 
 - name: Create CCM role manifest file
   copy:
     src: cloud-controller-manager-roles.yaml
-    dest: "{{ ansible_env.HOME }}/cloud-controller-manager-roles.yaml"
+    dest: "{{ ansible_env.HOME }}/openstack-cloud-controller-manager/cloud-controller-manager-roles.yaml"
 
 - name: Create CCM rolebinding manifest file
   copy:
     src: cloud-controller-manager-role-bindings.yaml
-    dest: "{{ ansible_env.HOME }}/cloud-controller-manager-role-bindings.yaml"
+    dest: "{{ ansible_env.HOME }}/openstack-cloud-controller-manager/cloud-controller-manager-role-bindings.yaml"
 
 - name: Create InitializerConfiguration manifest file
   copy:
     src: initializer_config_manifest.yaml
-    dest: "{{ ansible_env.HOME }}/initializer_config_manifest.yaml"
+    dest: "{{ ansible_env.HOME }}/openstack-cloud-controller-manager/initializer_config_manifest.yaml"
 
-- name: Create roles, rolebindings, CCM daemonset and InitializerConfiguration
-  shell: kubectl apply -f {{ item }}
-  loop:
-    - "{{ ansible_env.HOME }}/cloud-controller-manager-roles.yaml"
-    - "{{ ansible_env.HOME }}/cloud-controller-manager-role-bindings.yaml"
-    - "{{ ansible_env.HOME }}/openstack-cloud-controller-manager-ds.yaml"
-    - "{{ ansible_env.HOME }}/initializer_config_manifest.yaml"
+- name: Install cloud-controller-manager
+  shell: kubectl apply -f {{ ansible_env.HOME }}/openstack-cloud-controller-manager/
+
+- name: Download cinder-csi-plugin manifest zip
+  get_url:
+    url: https://github.com/lingxiankong/cloud-provider-openstack/archive/csi-manifest.zip
+    dest: "{{ ansible_env.HOME }}/cloud-provider-openstack.zip"
+
+- name: Unzip manifests
+  shell: unzip -qq -u {{ ansible_env.HOME }}/cloud-provider-openstack.zip 'cloud-provider-openstack-csi-manifest/manifests/cinder-csi-plugin/*' -d {{ ansible_env.HOME }}
+
+- name: Encode /etc/kubernetes/cloud-config and create csi secret
+  shell: kubectl create secret -n kube-system generic csi-secret-cinderplugin --from-literal=cloud.conf="$(cat /etc/kubernetes/cloud-config)" --dry-run -o yaml > {{ ansible_env.HOME }}/cloud-provider-openstack-csi-manifest/manifests/cinder-csi-plugin/csi-secret-cinderplugin.yaml
+
+- name: Install cinder-csi-plugin
+  shell: kubectl apply -f {{ ansible_env.HOME }}/cloud-provider-openstack-csi-manifest/manifests/cinder-csi-plugin/

@@ -174,7 +174,7 @@
   roles:
     - kube_node
 
-- name: Set up cloud controller manager
+- name: Set up cloud-controller-manager and cinder-csi-plugin
   hosts: k8s_master
   become: true
   become_method: sudo
