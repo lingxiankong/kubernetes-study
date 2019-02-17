@@ -31,14 +31,14 @@
 
 - name: Download cinder-csi-plugin manifest zip
   get_url:
-    url: https://github.com/lingxiankong/cloud-provider-openstack/archive/csi-manifest.zip
+    url: https://github.com/kubernetes/cloud-provider-openstack/archive/master.zip
     dest: "{{ ansible_env.HOME }}/cloud-provider-openstack.zip"
 
 - name: Unzip manifests
-  shell: unzip -qq -u {{ ansible_env.HOME }}/cloud-provider-openstack.zip 'cloud-provider-openstack-csi-manifest/manifests/cinder-csi-plugin/*' -d {{ ansible_env.HOME }}
+  shell: unzip -qq -u {{ ansible_env.HOME }}/cloud-provider-openstack.zip 'cloud-provider-openstack-master/manifests/cinder-csi-plugin/*' -d {{ ansible_env.HOME }}
 
 - name: Encode /etc/kubernetes/cloud-config and create csi secret
-  shell: kubectl create secret -n kube-system generic csi-secret-cinderplugin --from-literal=cloud.conf="$(cat /etc/kubernetes/cloud-config)" --dry-run -o yaml > {{ ansible_env.HOME }}/cloud-provider-openstack-csi-manifest/manifests/cinder-csi-plugin/csi-secret-cinderplugin.yaml
+  shell: kubectl create secret -n kube-system generic cloud-config --from-literal=cloud.conf="$(cat /etc/kubernetes/cloud-config)" --dry-run -o yaml > {{ ansible_env.HOME }}/cloud-provider-openstack-master/manifests/cinder-csi-plugin/csi-secret-cinderplugin.yaml
 
 - name: Install cinder-csi-plugin
-  shell: kubectl apply -f {{ ansible_env.HOME }}/cloud-provider-openstack-csi-manifest/manifests/cinder-csi-plugin/
+  shell: kubectl apply -f {{ ansible_env.HOME }}/cloud-provider-openstack-master/manifests/cinder-csi-plugin/
