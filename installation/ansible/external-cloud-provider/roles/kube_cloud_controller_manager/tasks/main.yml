@@ -1,5 +1,5 @@
 ---
-- name: Create cloud-config configmap
+- name: Create cloud-config configmap for ccm
   shell: kubectl create configmap cloud-config --from-file=/etc/kubernetes/cloud-config -n kube-system
   ignore_errors: True
 
@@ -37,7 +37,7 @@
 - name: Unzip manifests
   shell: unzip -qq -u {{ ansible_env.HOME }}/cloud-provider-openstack.zip 'cloud-provider-openstack-master/manifests/cinder-csi-plugin/*' -d {{ ansible_env.HOME }}
 
-- name: Encode /etc/kubernetes/cloud-config and create csi secret
+- name: Encode /etc/kubernetes/cloud-config and create cloud-config secret for csi
   shell: kubectl create secret -n kube-system generic cloud-config --from-literal=cloud.conf="$(cat /etc/kubernetes/cloud-config)" --dry-run -o yaml > {{ ansible_env.HOME }}/cloud-provider-openstack-master/manifests/cinder-csi-plugin/csi-secret-cinderplugin.yaml
 
 - name: Install cinder-csi-plugin

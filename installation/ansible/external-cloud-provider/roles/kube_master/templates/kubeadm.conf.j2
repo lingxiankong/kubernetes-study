@@ -6,6 +6,8 @@ networking:
   podSubnet: {{ pod_subnet }}
 unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:v{{ k8s_version }}"
 apiServer:
+  certSANs:
+    - {{ ansible_host }}
   extraArgs:
     cloud-provider: "external"
     enable-admission-plugins: NodeRestriction,Initializers
