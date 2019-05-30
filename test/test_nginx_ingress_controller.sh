@@ -1,8 +1,8 @@
-# 安装
+# 使用 helm 安装。默认会创建 nginx-ingress-controller service 和 nginx-ingress-default-backend service
 helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
+# 如果是手动安装，参考：
+# https://github.com/kubernetes/ingress-nginx/blob/master/docs/deploy/index.md
 
 # 创建 nginx 使用的证书
 folder=${HOME}/certs
