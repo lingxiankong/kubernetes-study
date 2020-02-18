@@ -1,6 +1,6 @@
 # Create k8s cluster using ansible on top of OpenStack
 
-This script can only create kubernetes cluster including 1 master and multiple nodes. Kubernetes cluster will use OpenStack as cloud provider. If you want to use separate openstack cloud controller manager, please see [here](https://github.com/lingxiankong/kubernetes-study/tree/master/installation/ansible/external-cloud-provider)
+This script can only create kubernetes cluster including 1 master and multiple nodes. Kubernetes cluster will use OpenStack as cloud provider, VMs(and related cloud resources) are also created. If you want to use separate openstack cloud controller manager, please see [here](https://github.com/lingxiankong/kubernetes-study/tree/master/installation/ansible/external-cloud-provider)
 
 ## How to run
 ### Prepare your local environment
@@ -21,16 +21,6 @@ echo 'alias k="kubectl"' >> ~/.bashrc
 echo 'alias lb="openstack loadbalancer"' >> ~/.bashrc
 echo 'export PYTHONWARNINGS="ignore"' >> ~/.bashrc
 sed -i "/alias ll/c alias ll='ls -l'" ~/.bashrc
-cat <<'EOF' >> ~/.bashrc
-show_openstack_credential() {
-    if [ "x$OS_USERNAME" == "x" ]; then
-        echo ""
-    else
-        echo "$OS_USERNAME@$OS_REGION_NAME "
-    fi
-}
-export PS1='\[\033[1;34m\]\u@\h $(show_openstack_credential)[\w]\[\033[00m\]\n\[\033[01;31m\]$\[\033[00m\] '
-EOF
 source ~/.bashrc
 sudo -s
 
@@ -44,7 +34,7 @@ openstack flavor create --id 6 --ram 8196 --disk 20 --vcpus 8 --public k8s
 # create keypair
 source openrc demo demo
 ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
-openstack keypair create --public-key ~/.ssh/id_rsa.pub testkey
+openstack keypair create --public-key ~/.ssh/id_rsa.pub lingxian_key
 # set up the default security group rules
 openstack security group rule create --proto icmp default
 openstack security group rule create --protocol tcp --dst-port 1:65535 default
@@ -82,7 +72,22 @@ source_adm
 user_id=$(openstack user show demo -c id -f value)
 tenant_id=$(openstack project show demo -c id -f value)
 source_demo
-ansible-playbook site.yaml -e "node_prefix=test rebuild=false flavor=6 image=$image network=$network key_name=testkey private_key=$HOME/.ssh/id_rsa auth_url=$auth_url user_id=$user_id password=password tenant_id=$tenant_id region=RegionOne subnet_id=$subnet_id k8s_version=1.13.2"
+
+ansible-playbook site.yaml -v -e \
+"node_prefix=test \
+rebuild=false \
+flavor=6 \
+image=$image \
+network=$network \
+key_name=testkey \
+private_key=$HOME/.ssh/id_rsa \
+auth_url=$auth_url \
+user_id=$user_id \
+password=password \
+tenant_id=$tenant_id \
+region=RegionOne \
+subnet_id=$subnet_id \
+k8s_version=1.17.3"
 ```
 
 If anything unexpected happened during the installation, just re-run the command but changing `rebuild=true`.

@@ -1,4 +1,9 @@
 ---
+- name: Prepare kubeadm.conf
+  template:
+    src: kubeadm.conf.j2
+    dest: "{{ ansible_env.HOME }}/kubeadm.conf"
+
 - name: Make sure /etc/kubernetes/pki exists
   file:
     path: /etc/kubernetes/pki
@@ -19,5 +24,5 @@
     name: kubelet
 
 - name: Join to cluster
-  shell: "{{ hostvars[groups['k8s_master'][0]]['join_str'] }}"
+  shell: kubeadm join --config {{ ansible_env.HOME }}/kubeadm.conf
   when: bootstrap | bool

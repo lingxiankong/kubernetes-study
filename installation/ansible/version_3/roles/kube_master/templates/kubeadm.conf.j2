@@ -1,11 +1,26 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
 ---
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+  - token: "9a08jv.c0izixklcxtmnze7"
+    description: "kubeadm bootstrap token"
+    ttl: "24h"
+
+---
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: v{{ k8s_version }}
 networking:
   podSubnet: {{ pod_subnet }}
-unifiedControlPlaneImage: "gcr.io/google_containers/hyperkube-amd64:v{{ k8s_version }}"
+imageRepository: "k8s.gcr.io"
 apiServer:
+  certSANs:
+    - {{ ansible_local_ip }}
+    - {{ ansible_public_ip }}
+{% for ip in extra_api_endpoints %}
+    - {{ ip }}
+{% endfor %}
   extraArgs:
     cloud-provider: "openstack"
     cloud-config: /etc/kubernetes/pki/cloud-config

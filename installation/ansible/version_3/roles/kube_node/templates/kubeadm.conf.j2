@@ -1,0 +1,8 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: {{ hostvars[groups['k8s_master'][0]]['ansible_local_ip'] }}:6443
+    token: 9a08jv.c0izixklcxtmnze7
+    unsafeSkipCAVerification: true

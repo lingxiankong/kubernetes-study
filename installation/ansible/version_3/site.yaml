@@ -75,7 +75,9 @@
         name: "{{ item.name }}"
         groups: k8s_hosts
         ansible_user: ubuntu
-        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_host: "{{ item.public_v4 }}"
+        ansible_local_ip: "{{ item.private_v4 }}"
+        ansible_public_ip: "{{ item.public_v4 }}"
         ansible_ssh_private_key_file: "{{ private_key }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
       with_items: "{{ openstack_servers }}"
@@ -85,7 +87,9 @@
         name: "{{ item.name }}"
         groups: k8s_master
         ansible_user: ubuntu
-        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_host: "{{ item.public_v4 }}"
+        ansible_local_ip: "{{ item.private_v4 }}"
+        ansible_public_ip: "{{ item.public_v4 }}"
         ansible_ssh_private_key_file: "{{ private_key }}"
       when: item.name | regex_search('(master)')
       with_items: "{{ openstack_servers }}"
@@ -95,7 +99,9 @@
         name: "{{ item.name }}"
         groups: k8s_nodes
         ansible_user: ubuntu
-        ansible_host: "{{ item.private_v4 if public_network is undefined else item.public_v4 }}"
+        ansible_host: "{{ item.public_v4 }}"
+        ansible_local_ip: "{{ item.private_v4 }}"
+        ansible_public_ip: "{{ item.public_v4 }}"
         ansible_ssh_private_key_file: "{{ private_key }}"
       when: item.name | regex_search('(node)')
       with_items: "{{ openstack_servers }}"
@@ -110,17 +116,8 @@
     - name: Wait for cloud init to finish
       raw: cloud-init status --wait
 
-    - name: Install python 2
-      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
-
-    - name: Install pip
-      shell: which pip || (curl https://bootstrap.pypa.io/get-pip.py | python - && rm -f get-pip.py)
-
-    - name: Pin pip to 9.0.3
-      shell: pip install pip==9.0.3
-
-    - name: Gather facts after python installation
-      setup: filter=ansible_*
+    - name: Install python 3
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python3-minimal)
 
     - name: Install packages
       apt:
@@ -129,11 +126,12 @@
         update_cache: yes
       vars:
         packages:
+          - python3-pip
           - ansible
           - unzip
           - build-essential
-          - python-dev
-          - python-setuptools
+          - python3-dev
+          - python3-setuptools
           - libffi-dev
           - libxslt1-dev
           - libxml2-dev
@@ -141,6 +139,10 @@
           - libssl-dev
           - zlib1g-dev
           - jq
+          - net-tools
+
+    - name: Pin pip to 9.0.3
+      shell: pip3 install pip==9.0.3
 
     - name: Install pypi libraries
       pip:
@@ -151,8 +153,14 @@
           - python-openstackclient
           - httpie
 
+    - name: Gather facts after python installation
+      setup: filter=ansible_*
+
     - name: Build hosts file
       lineinfile: dest=/etc/hosts line="{{ ansible_host }} {{ ansible_hostname }}" state=present
+
+    - name: Disable swap memory
+      shell: swapoff -a
 
   roles:
     - docker

@@ -6,6 +6,8 @@
     state: present
 
 # add-apt-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+# At the time of writing, Ubuntu 18.04 (Bionic) packages for Kubernetes are not available.
+# Check here https://packages.cloud.google.com/apt/dists
 - name: Set up Kubernetes repository
   apt_repository: repo='deb http://apt.kubernetes.io/ kubernetes-xenial main' state=present
 
@@ -21,10 +23,4 @@
       - kubectl={{ k8s_version }}-00
       - kubeadm={{ k8s_version }}-00
 
-- import_tasks: install_kube_prompt_tasks.yml
-
-- name: create alias for cli
-  lineinfile:
-    path: /etc/bash.bashrc
-    create: true
-    line: 'alias k="/usr/bin/kubectl"'
+# - import_tasks: install_kube_prompt_tasks.yml

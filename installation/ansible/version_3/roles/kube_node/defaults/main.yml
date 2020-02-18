@@ -5,3 +5,5 @@ password: password
 tenant_id: 84ce53873abe4d22a6f2491879e76048
 region: RegionOne
 subnet_id: 1740cd57-62ab-4f7f-a853-2038561060d1
+
+bootstrap: true

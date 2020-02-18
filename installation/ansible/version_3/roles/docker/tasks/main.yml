@@ -19,7 +19,7 @@
 
 # add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
 - name: Set up the stable repository
-  apt_repository: repo='deb https://download.docker.com/linux/ubuntu xenial stable' state=present
+  apt_repository: repo='deb https://download.docker.com/linux/ubuntu {{ hostvars[inventory_hostname].ansible_distribution_release }} stable' state=present
 
 # apt-get update; apt install -y docker-ce=17.03.2~ce-0~ubuntu-xenial
 - name: Install docker-ce
